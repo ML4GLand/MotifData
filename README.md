@@ -2,10 +2,8 @@
 
 <img src="docs/_static/MotifData_logo.png" alt="MotifData Logo" width=350>
 
-# MotifData -- Motif analysis toolkit in Python
+# MotifData - Motif analysis toolkit in Python
 
 ```python
 import motifdata as motif
 ```
-
-# MotifData
