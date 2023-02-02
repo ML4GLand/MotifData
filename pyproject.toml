@@ -1,15 +1,12 @@
 [tool.poetry]
-name = "seqexplainer"
+name = "motifdata"
 version = "0.0.1"
-description = "A tool for interpreting sequence input genomics PyTorch models"
+description = "A tool for handling biological sequence motifs in Python"
 authors = ["adamklie <aklie@ucsd.edu>"]
 
 [tool.poetry.dependencies]
 python = ">=3.7.12,<3.11"
-torch = "^1.11.0"
-captum = "^0.5.0"
 numpy = "^1.21.5"
-matplotlib = "^3.5.2"
 logomaker = "^0.8"
 
 [tool.poetry.dev-dependencies]
