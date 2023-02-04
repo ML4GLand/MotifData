@@ -11,8 +11,8 @@ from ._utils import (
     _parse_background, 
     _parse_motif, 
 )
-from ...preprocess import decode_seq
-from ...preprocess._utils import _token2one_hot
+from ._utils import _token2one_hot
+from ._utils import decode_seq
 
 def _read_meme_pymemesuite(
     filename: PathLike
@@ -124,8 +124,6 @@ def read_meme(
         MotifSet object
     """
     return READER_REGISTRY[return_type](filename)
-
-    
 
 def read_motifs(
     filename,

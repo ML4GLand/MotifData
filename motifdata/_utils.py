@@ -2,8 +2,6 @@ import re
 import numpy as np
 from io import TextIOBase
 from ._Motif import Motif
-from ...preprocess import decode_seq
-from ...preprocess._utils import _token2one_hot
 
 __version_regex = re.compile("^MEME version ([0-9]+)")
 __background_regex = re.compile( "^Background letter frequencies(?: \(from (.+)\))?")
@@ -98,7 +96,7 @@ def _parse_motif(line: str, handle: TextIOBase) -> str:
         pfm_rows.append(pfm_row)
         line = handle.readline()
 
-        if (line.strip() == "") or line.startswith("MOTIF"):
+        if (line.strip() == "") or line.startswith("MOTIF") or line.startswith("URL"):
             pfm = np.stack(pfm_rows)
             if motif_length is None:
                 motif_length = pfm.shape[0]
@@ -116,6 +114,94 @@ def _parse_motif(line: str, handle: TextIOBase) -> str:
                 name=motif_name
             )
             return motif
+
+DNA = ["A", "C", "G", "T"]
+RNA = ["A", "C", "G", "U"]
+COMPLEMENT_DNA = {"A": "T", "C": "G", "G": "C", "T": "A"}
+COMPLEMENT_RNA = {"A": "U", "C": "G", "G": "C", "U": "A"}
+
+def _get_vocab(vocab):
+    if vocab == "DNA":
+        return DNA
+    elif vocab == "RNA":
+        return RNA
+    else:
+        raise ValueError("Invalid vocab, only DNA or RNA are currently supported")
+
+# exact concise
+def _get_index_dict(vocab):
+    """
+    Returns a dictionary mapping each token to its index in the vocabulary.
+    """
+    return {i: l for i, l in enumerate(vocab)}
+
+def _token2one_hot(tvec, vocab="DNA", fill_value=None):
+    """
+    Converts an L-vector of integers in the range [0, D] into an L x D one-hot
+    encoding. If fill_value is not None, then the one-hot encoding is filled
+    with this value instead of 0.
+
+    Parameters
+    ----------
+    tvec : np.array
+        L-vector of integers in the range [0, D]
+    vocab_size : int
+        D
+    fill_value : float, optional
+        Value to fill the one-hot encoding with. If None, then the one-hot
+    """
+    vocab = _get_vocab(vocab)
+    vocab_size = len(vocab)
+    arr = np.zeros((vocab_size, len(tvec)))
+    tvec_range = np.arange(len(tvec))
+    tvec = np.asarray(tvec)
+    arr[tvec[tvec >= 0], tvec_range[tvec >= 0]] = 1
+    if fill_value is not None:
+        arr[:, tvec_range[tvec < 0]] = fill_value
+    return arr.astype(np.int8) if fill_value is None else arr.astype(np.float16)
+
+# modified dinuc_shuffle
+def _one_hot2token(one_hot, neutral_value=-1, consensus=False):
+    """
+    Converts a one-hot encoding into a vector of integers in the range [0, D]
+    where D is the number of classes in the one-hot encoding.
+
+    Parameters
+    ----------
+    one_hot : np.array
+        L x D one-hot encoding
+    neutral_value : int, optional
+        Value to use for neutral values.
+    
+    Returns
+    -------
+    np.array
+        L-vector of integers in the range [0, D]
+    """
+    if consensus:
+        return np.argmax(one_hot, axis=0)
+    tokens = np.tile(neutral_value, one_hot.shape[1])  # Vector of all D
+    seq_inds, dim_inds = np.where(one_hot.transpose()==1)
+    tokens[seq_inds] = dim_inds
+    return tokens
+
+def _sequencize(tvec, vocab="DNA", neutral_value=-1, neutral_char="N"):
+    """
+    Converts a token vector into a sequence of symbols of a vocab.
+    """
+    vocab = _get_vocab(vocab) 
+    index_dict = _get_index_dict(vocab)
+    index_dict[neutral_value] = neutral_char
+    return "".join([index_dict[i] for i in tvec])
+
+def decode_seq(arr, vocab="DNA", neutral_value=-1, neutral_char="N"):
+    """Convert a single one-hot encoded array back to string"""
+    return _sequencize(
+        tvec=_one_hot2token(arr, neutral_value),
+        vocab=vocab,
+        neutral_value=neutral_value,
+        neutral_char=neutral_char,
+    )
 
 def _info_content(pwm, transpose=False, bg_gc=0.415):
     ''' Compute PWM information content.
@@ -137,3 +223,4 @@ def _info_content(pwm, transpose=False, bg_gc=0.415):
             ic += -bg_pwm[j]*np.log2(bg_pwm[j]) + pwm[i][j]*np.log2(pseudoc+pwm[i][j])
 
     return ic
+
