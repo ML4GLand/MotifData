@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pyranges as pr
+from ...utils import track
 
 
 def fimo_motifs(sdata, pymeme_motifs, background):
@@ -107,6 +108,7 @@ def score_seqs(
     return dataframe
 
 
+@track
 def jaspar_annots_sdata(
     sdata,
     motif_accs=None,

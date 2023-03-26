@@ -42,11 +42,8 @@ def _parse_background(line: str, handle: TextIOBase) -> str:
     line = handle.readline()
     while line:
         if (not line.rstrip()) or line.startswith("MOTIF"):
-            if (
-                abs(1 - sum(background.values()))
-                <= __background_sum_error
-            ):
-                return line
+            if (abs(1 - sum(background.values())) <= __background_sum_error):
+                return line, background
             else:
                 raise RuntimeError("Background frequencies do not sum to 1")
         else:
