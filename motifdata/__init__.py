@@ -4,6 +4,7 @@ from ._Motif import Motif, MotifSet
 from ._io import (
     read_meme,
     read_homer,
+    read_motifs,
     load_jaspar,
     read_h5,
     write_meme,

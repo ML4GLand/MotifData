@@ -188,6 +188,61 @@ def read_homer(
         background=background,
     )
 
+def read_motifs(
+    filename,
+    transpose=True,
+    counts=True
+):
+    """Read motifs from a .motif file into a MotifSet object.
+
+    Parameters
+    ----------
+    filename : str
+        .motif filename
+    transpose : bool, optional
+        whether to transpose the matrices, by default True
+    counts : bool, optional
+        whether the input matrices are counts and should be converted to pfm, by default True
+    """
+
+    with open(filename) as motif_file:
+        data = motif_file.readlines()
+    pfm_rows = []
+    pfms = []
+    ids = []
+    names = []
+    for line in data:
+        line = line.rstrip()
+        if line.startswith(">"):
+            ids.append(line.split()[0])
+            names.append(line.split()[1])
+            if len(pfm_rows) > 0:
+                pfms.append(np.vstack(pfm_rows))
+                pfm_rows = []
+        # elif the line is only a newline
+        elif not line.strip():
+            continue
+        else:
+            pfm_row = np.array(list(map(float, line.split())))
+            pfm_rows.append(pfm_row)
+    pfms.append(np.vstack(pfm_rows))
+    motifs = {}
+    for i in range(len(pfms)):
+        if transpose:
+            pfms[i] = pfms[i].T
+        if counts:
+            pfms[i] = np.divide(pfms[i], pfms[i].sum(axis=1)[:,None])
+        consensus = decode_seq(_token2one_hot(pfms[i].argmax(axis=1)))
+        motif = Motif(
+            pfm=pfms[i],
+            identifier=ids[i],
+            name=names[i],
+            consensus=consensus,
+            length=len(consensus)
+        )
+        motifs[ids[i]] = motif
+    return MotifSet(motifs=motifs)
+
 def _load_jaspar(
     motif_accs=None, 
     motif_names=None, 

@@ -3,8 +3,7 @@ import numpy as np
 from typing import List, Dict, Union, Optional, Iterator
 import Bio
 from ._Motif import Motif, MotifSet
-from ._utils import decode_seq
-from ._utils import _token2one_hot
+from ._utils import _token2one_hot, decode_seq
 
 def to_biopython(
     motif_set: MotifSet,
@@ -117,7 +116,6 @@ def from_pymemesuite(
         )
         motifs[motif.identifier] = motif
     return MotifSet(motifs=motifs) 
-    return motif_set
 
 def from_kernel(
     kernel: np.ndarray,
@@ -149,7 +147,7 @@ def from_kernel(
     MotifSet
         MotifSet object
     """
-    n_filters, n_chennels, len_filter = kernel.shape
+    n_filters, n_channels, len_filter = kernel.shape
     identifiers = identifiers or [f"filter_{i}" for i in range(n_filters)]
     names = names or [f"filter_{i}" for i in range(n_filters)]
     motifs = {}
@@ -174,27 +172,85 @@ def from_kernel(
     )
 
 def to_kernel(
-    motif_set: MotifSet, 
+    motif_set: MotifSet,
     tensor: torch.Tensor = None,
     size: tuple = None,
-    convert_to_pwm=True
+    convert_to_pwm=True,
+    divide_by_bg=False,
+    motif_align="center",
+    kernel_align="center"
 ) -> np.ndarray:
-    """Convert MotifSet object to array of motif weights"""
+    """Convert MotifSet object to a torch Tensor
+    
+    This is often useful for initializing the weights of a convolutional layer with motifs.
+    
+    Parameters
+    ----------
+    motif_set : md.MotifSet
+        The motif set to convert to a tensor
+    tensor : torch.Tensor, optional
+        A tensor to convert to a kernel, by default None
+    size : tuple, optional
+        The size of the kernel to initialize, by default None
+    convert_to_pwm : bool, optional
+        Whether to convert the motifs to PWMs, by default True
+    motif_align : str, optional
+        If the motif is longer than the kernel, what part of the motif to take
+        (left, center, right), by default "center". If the motif length is odd
+        the extra base will right aligned.
+    kernel_align : str, optional
+        If the kernel is longer than the motif, what part of the kernel to take
+        (left, center, right), by default "center". If the kernel length is odd
+        the extra base will right aligned.
+    """
+
+    # Check if torch is installed
+    try:
+        import torch
+    except ImportError:
+        raise ImportError("Please install PyTorch to use this function (pip install torch))")
+    
+    # If tensor is None, initialize a new tensor
     if tensor is None:
         assert size is not None
         kernel = torch.zeros(size)
         torch.nn.init.xavier_uniform_(kernel)
+
+    # If tensor is not None, check if it is a tensor
     else:
         kernel = tensor
-        size = kernel.shape
-    if len(size) != 3:
+
+    # Check if kernel is a tensor with 3 dimensions
+    if len(kernel.shape) != 3:
         raise RuntimeError("Kernel matrix size must be a tuple of length 3")
+
+    # Get the dimensions of the kernel
+    N, A, L = kernel.shape
+    
+    # 
     motifs = motif_set.motifs
     for i, motif_id in enumerate(motifs):
         motif = motifs[motif_id]
+        curr_kernel = motif.pfm
         if convert_to_pwm:
-            new_weight = torch.tensor(motif.pfm[: min(len(motif), kernel.shape[2]), :] / 0.25).transpose(0, 1)
+            curr_kernel = ppms_to_pwms(curr_kernel)
+        if divide_by_bg:
+            curr_kernel = curr_kernel / 0.25
+        if len(curr_kernel) > L:
+            if motif_align == "left":
+                curr_kernel = curr_kernel[:L, :]
+            elif motif_align == "center":
+                start = (len(curr_kernel) - L) // 2
+                curr_kernel = curr_kernel[start : start + L, :]
+            elif motif_align == "right":
+                curr_kernel = curr_kernel[-L:, :]
+            kernel[i, :, :] = torch.tensor(curr_kernel, dtype=torch.float32).transpose(0, 1)
         else:
-            new_weight = torch.tensor(motif.pfm[: min(len(motif), kernel.shape[2]), :]).transpose(0, 1)
-        kernel[i, :, : min(len(motif), kernel.shape[2])] = new_weight
+            if kernel_align == "left":
+                kernel[i, :, : len(curr_kernel)] = torch.tensor(curr_kernel, dtype=torch.float32).transpose(0, 1)
+            elif kernel_align == "center":
+                start = (L - len(curr_kernel)) // 2
+                kernel[i, :, start : start + len(curr_kernel)] = torch.tensor(curr_kernel, dtype=torch.float32).transpose(0, 1)
+            elif kernel_align == "right":
+                kernel[i, :, -len(curr_kernel) :] = torch.tensor(curr_kernel, dtype=torch.float32).transpose(0, 1)
     return kernel
