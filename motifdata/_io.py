@@ -433,3 +433,4 @@ def write_h5(
         for motif in motif_set.motifs.values():
             f.create_dataset(motif.identifier, data=motif.pfm)
     print("Saved pfm in h5 format as: {}".format(filename))
+    

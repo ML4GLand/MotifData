@@ -149,3 +149,4 @@ class MotifSet:
             bool: Whether the motif set contains a motif with the given identifier.
         """
         return key in self.motifs
+    
