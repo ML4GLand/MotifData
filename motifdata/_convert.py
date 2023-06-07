@@ -4,6 +4,7 @@ from typing import List, Dict, Union, Optional, Iterator
 import Bio
 from ._Motif import Motif, MotifSet
 from ._utils import _token2one_hot, decode_seq
+from ._transform import ppms_to_pwms
 
 def to_biopython(
     motif_set: MotifSet,
@@ -172,15 +173,16 @@ def from_kernel(
     )
 
 def to_kernel(
-    motif_set: MotifSet,
-    tensor: torch.Tensor = None,
-    size: tuple = None,
+    motif_set,
+    kernel: torch.Tensor = None,
     convert_to_pwm=True,
     divide_by_bg=False,
     motif_align="center",
     kernel_align="center"
-) -> np.ndarray:
+) -> torch.Tensor:
     """Convert MotifSet object to a torch Tensor
+    
+    TODO make this return just a numpy array, so we can avoid torch altogether. init function can handle that
     
     This is often useful for initializing the weights of a convolutional layer with motifs.
     
@@ -209,16 +211,6 @@ def to_kernel(
         import torch
     except ImportError:
         raise ImportError("Please install PyTorch to use this function (pip install torch))")
-    
-    # If tensor is None, initialize a new tensor
-    if tensor is None:
-        assert size is not None
-        kernel = torch.zeros(size)
-        torch.nn.init.xavier_uniform_(kernel)
-
-    # If tensor is not None, check if it is a tensor
-    else:
-        kernel = tensor
 
     # Check if kernel is a tensor with 3 dimensions
     if len(kernel.shape) != 3:
@@ -254,3 +246,4 @@ def to_kernel(
             elif kernel_align == "right":
                 kernel[i, :, -len(curr_kernel) :] = torch.tensor(curr_kernel, dtype=torch.float32).transpose(0, 1)
     return kernel
+
