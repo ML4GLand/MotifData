@@ -1,0 +1,12 @@
+name: motif-data
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - biopython
+  - h5py
+  - numpy
+  - pandas
+  - pyjaspar
+  - pip:
+    - pymemesuite
