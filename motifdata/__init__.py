@@ -1,3 +1,11 @@
+try:
+    import importlib.metadata as importlib_metadata
+except ModuleNotFoundError:
+    import importlib_metadata
+
+package_name = "motifdata"
+__version__ = importlib_metadata.version(package_name)
+
 from Bio import motifs
 from Bio.motifs import jaspar
 from ._Motif import Motif, MotifSet

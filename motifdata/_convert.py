@@ -1,4 +1,3 @@
-import torch
 import numpy as np
 from typing import List, Dict, Union, Optional, Iterator
 import Bio
@@ -174,12 +173,12 @@ def from_kernel(
 
 def to_kernel(
     motif_set,
-    kernel: torch.Tensor = None,
+    kernel= None,
     convert_to_pwm=True,
     divide_by_bg=False,
     motif_align="center",
     kernel_align="center"
-) -> torch.Tensor:
+):
     """Convert MotifSet object to a torch Tensor
     
     TODO make this return just a numpy array, so we can avoid torch altogether. init function can handle that

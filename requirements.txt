@@ -1,0 +1,16 @@
+Bio==1.5.9
+biopython==1.77
+biopython==1.81
+h5py==3.7.0
+importlib_metadata==6.2.0
+importlib_metadata==6.1.0
+numpy==1.23.0
+numpy==1.23.5
+pandas==1.5.2
+preprocess==2.0.0
+pyjaspar==2.1.1
+pymemesuite==0.1.0a1
+pyranges==0.0.120
+setuptools==67.6.0
+torch==2.0.0
+utils==1.0.1
