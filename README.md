@@ -9,8 +9,4 @@ import motifdata as motif
 ```
 
 ### Motif analysis with [MotifData](https://github.com/ML4GLand/MotifData)
-
-  - Perform HOMER motif analysis
-  - Perform MEME motif analysis
-  - Perform DEM (Cluster-buster based) motif analysis
-  - Perform cisTarget
+Coming soon.
