@@ -9,7 +9,7 @@ requirements = []
 
 setup(
     name="motifdata",
-    version="0.1.0",
+    version="0.1.2",
     author="Adam Klie",
     author_email="aklie@ucsd.edu",
     description="A tool for handling biological sequence motifs in Python",
